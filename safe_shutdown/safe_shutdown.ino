@@ -118,7 +118,7 @@ void executeTasks() {
  * SystemState.battery_voltage
  */
 void readBatteryVoltage() {
-  //DigiKeyboard.println("Reading battery...");
+  //Serial.println("Reading battery...");
   // Increment the voltages[] index
   vIndex++;
   if (vIndex >= MAX_BATTERY_READS) {
@@ -131,8 +131,11 @@ void readBatteryVoltage() {
   voltages[vIndex] = analogRead(pinBattery);
   vTotal += voltages[vIndex];
 
+  
+  
+
   // Some debugging output. This can be removed from the final sketch.
-  /*
+
   float v = voltages[vIndex] * (5.00 / 1023.00);
   char str_v[8];
   char str_a[8];
@@ -143,15 +146,15 @@ void readBatteryVoltage() {
   strcat(buffer, "v (");
   strcat(buffer, str_a);
   strcat(buffer, ")");
-  DigiKeyboard.println(buffer);
-  */
-  DigiKeyboard.println(vTotal);
+  Serial.println(buffer);
+  system_state.average_voltage = v;
+
 }
 
 /* Checks the state of the power switch
  */
 void checkState() {
-  //DigiKeyboard.println("Checking switch...");
+  //Serial.println("Checking switch...");
 
   int switch_state = digitalRead(pinSwitch);
   if (switch_state == 1) { // subject to change (inverse)
@@ -165,17 +168,11 @@ void checkState() {
 // ----- I2C -----
 /* Writes the SystemState struct to the I2C bus
  */
-
 void tws_requestEvent() {
-  // Copy the system_state struct into a byte array
-  void* p = &system_state;
-  uint8_t buffer[sizeof(SystemState)];
-  memcpy(buffer, p, sizeof(SystemState));
-
-  // Write buffer to I2C
-  for (int i = 0; i < sizeof(buffer); i++) {
-    TinyWireS.send(buffer[i]);
-  }
+   const byte * p = (const byte*) &system_state;
+   unsigned int i;
+   for (i = 0; i < sizeof system_state; i++)
+         Wire.write(*p++);
 }
 
 /* Used to take instructions from the I2C master python script
@@ -183,14 +180,21 @@ void tws_requestEvent() {
  * eg. enable/disable power switch
  */
 void tws_receiveEvent(uint8_t howMany) {
-  while(TinyWireS.available()) {
-    int data = TinyWireS.receive();
-  }
+//  while(Wire.available()) {
+////    int data = Wire.read();
+//    byte * p = (byte*) &value;
+//    unsigned int i;
+//    for (i = 0; i < sizeof value; i++)
+//      *p++ = Wire.read();
+//    return i;
+//  }
+
 }
 
 // ----- START -----
 void setup() {
-  DigiKeyboard.println("Running...");
+  Serial.begin(9600);
+  Serial.println("Running...");
   system_state.current_state = BOOTUP;
 
   // Initialise the pins
@@ -199,27 +203,28 @@ void setup() {
   analogReference(DEFAULT);
   //pinMode(pinKeepAlive, OUTPUT);
   //digitalWrite(pinKeepAlive, HIGH);
-  DigiKeyboard.println("Pins OK");
+  Serial.println("Pins OK");
 
   // Create some tasks
   int task_result = createTask(readBatteryVoltage, BATTERY_READ_INTERVAL, BATTERY_READ_DELAY, -1);
   int task_result2 = createTask(checkState, CHECK_STATE_INTERVAL, CHECK_STATE_DELAY, -1);
 
   if (task_result + task_result2 == 2) {
-    DigiKeyboard.println("Tasks OK");
+    Serial.println("Tasks OK");
   }
   else {
-    DigiKeyboard.println("Problem creating one or more tasks!");
+    Serial.println("Problem creating one or more tasks!");
   }
 
   // Setup the I2C bus
-  TinyWireS.begin(I2C_SLAVE_ADDRESS);
-  TinyWireS.onReceive(tws_receiveEvent);
-  TinyWireS.onRequest(tws_requestEvent);
-  DigiKeyboard.println("I2C OK");
+  Wire.begin(I2C_SLAVE_ADDRESS);
+  Wire.onReceive(tws_receiveEvent);
+  Wire.onRequest(tws_requestEvent);
+  Serial.println("I2C OK");
 }
 
 void loop() {
   executeTasks();
-  TinyWireS_stop_check();
+//  Wire_stop_check();
+  
 }
