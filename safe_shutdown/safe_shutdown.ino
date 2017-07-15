@@ -1,5 +1,4 @@
-#include <DigiKeyboard.h>
-#include <TinyWireS.h>
+#include <Wire.h>
 #define I2C_SLAVE_ADDRESS 0x4
 #define MAX_TASKS 2
 #define MAX_BATTERY_READS 4
@@ -28,17 +27,17 @@ typedef void(*TaskFunction)(); // Function pointer
 * SCK:                  PA5
 */
 
-int pinBattery = PA1;
-int pinSwitch = PB7;
-int pinKeepAlive = PB3;
-int gpioKeepAlive = PA3;
-int gpioShutdown = PA7;
-int pinSDA = PB0;
-int pinSCL = PB3;
+int pinBattery = A1;
+int pinSwitch = 7;
+int pinKeepAlive = 3;
+int gpioKeepAlive = A3;
+int gpioShutdown = A7;
+int pinSDA = 0;
+int pinSCL = 3;
 
-int pinMOSI = PA4;
-int pinMISO = PA2;
-int pinSCK = PA5;
+int pinMOSI = A4;
+int pinMISO = A2;
+int pinSCK = A5;
 
 // ----- BATTERY -----
 
@@ -51,7 +50,7 @@ typedef enum state {BOOTUP, RUNNING, SHUTDOWN} State;
 
 typedef struct {
   State current_state;
-  int average_voltage;
+  float average_voltage;
 } SystemState;
 
 SystemState system_state;
